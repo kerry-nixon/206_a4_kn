@@ -1,0 +1,191 @@
+---
+title: "Exploring juvenile snowshoe hare data from Bonanza Creek Experimental Forest"
+author: "Kerry Nixon"
+date: "11/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE) #Excluding code, messages, and warnings from knitted document
+
+# Attaching packages
+library(tidyverse)
+library(lubridate)
+library(janitor)
+library(here)
+library(effsize)
+library(broom)
+library(ggbeeswarm)
+library(kableExtra)
+
+# Reading in the data
+hares_data <- read.csv(here("data","bonanza_hares.csv"))
+```
+
+## Introduction - NEEDED
+
+A 4 - 5 sentence "mini-introduction" to what this study is exploring, including basic background information about the subject, site and study (with citations as needed), and a brief overview of what is included in the exploratory report. You should probably do this last.
+
+### Data and analyses - UPDATE ME
+
+Knut Kielland and collegues conducted capture-recapture studies of snowshoe hares at 5 locations in the Tanana valley of the Bonanza Creek Experimental Forest in Alaska. The data contain observations for 3197 hare trappings, collected from 1999 through 2012. Following exploratory data visualization, flipper lengths between male and female penguins are by two-sample t-tests using a significance level ($\alpha$) of 0.05 throughout. Differences between groups are described by Cohen's *d* effect size. The relationship between flipper length and body mass is explored by simple linear regression. All analyses are in R version 4.0.2 using RStudio version 1.3.1056. 
+
+### Exploratory findings
+
+##### Annual juvenile hare trap counts. 
+
+```{r}
+# Counting the total number juvenile (age = "j") hare trappings per year:
+# Using `lubridate()` package to parse dates and pull out the year
+# Using `count()` to count total number hares observed each year
+# Using `janitor::get_dupes()` to check for duplicate traps
+hares_juveniles <- hares_data %>% 
+  filter(age == "j") %>% 
+  mutate(date_ymd = mdy(date),
+         year = year(date_ymd))
+
+juvenile_counts <- hares_juveniles %>% 
+  group_by(year) %>% 
+  count()
+
+kable(juvenile_counts, col.names = c("Year", "Count")) %>% 
+  kable_styling(full_width = FALSE, "striped")
+
+```
+
+**Figure 1.** Juvenile Hare Counts by Year. The total number of juvenile hares caught in traps are listed next to the year they were caught and counted.
+
+```{r}
+# Hare Count by Year Data Viz
+ggplot(data = juvenile_counts, aes(x = year, y = n)) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = c(1999,2002,2005,2008,2011)) +
+  labs(x = "Year",
+       y = "Number of Hares Counted",
+       title = "Juvenile Hare Count by Year (1999-2012)")
+
+ggplot(data = hares_juveniles, aes(x = year)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks = c(1999,2002,2005,2008,2011)) +
+  scale_y_continuous(limits = c(0,130)) +
+  labs(x = "Year",
+       y = "Number of Hares Counted",
+       title = "Juvenile Hare Count by Year (1999-2012)")
+
+```
+**Figure 2.** Juvenile Hare Counts by Year. The total number of juvenile hares caught in traps are shown for every year of the study where there was data collected.
+
+```{r}
+# Creating values for the summary statistics to use in reproducible text - NOT SURE HOW TO MAKE SUMMARY TABLE
+n <- juvenile_counts %>% 
+  pull(n)
+
+juv_mean <- mean(n)
+juv_median <- median(n)
+juv_max <- max(n)
+juv_min <- min(n)
+```
+
+
+The maximum juvenile hares counted in a a year was `r (juv_max)` in 1999. The minimum juvenile hares counted in a year was `r (juv_min)` in 2010. The mean count of juvenile hares was `r(juv_mean)`.
+
+Count the total number of juvenile (age == "j") hare trappings during each year of the study (include all grid sites), and create a finalized data visualization of the counts by year. Include a figure caption below the figure in your report. 
+
+Then, in 3 - 4 sentences below your figure, describe major takeaways from your graph about total snowshoe hare trappings at the site. You might consider:
+
+What were the minimum and maximum counts of juvenile hare trappings?
+Mean or median annual number of juvenile hares trapped?
+General/notable trends?
+These are absolute counts, but this count is also impacted by effort (e.g. the number of days and number of traps in the study each year). What would you suggest be done moving forward (you are not expected to actually do this) to standardize the juvenile hare population in future analyses?
+
+
+
+##### Visualize juvenile hare weights. 
+
+Create a finalized data visualization (or visualizations) in which you compare **juvenile hare weights by sex and site (grid)** (ignore other variables). You should include groups where these variables are not recorded (`NA`). Include finalized figure captions below your visualization(s).
+
+Then, in 2 - 3 sentences below your visualization(s) describe in text the main takeaways that you would want the audience to understand from your figures.
+
+Note: There are multiple ways to visualize these comparisons. We encourage you to think carefully then make decisions about how to visualize these comparisons, including:
+
+How can I use faceting to simplify the comparisons into manageable pieces?
+Am I showing the audience the data, summary statistics, or both?
+Have I updated graph labels, headers in facets, etc. to make it as straightforward as possible for viewers?
+
+```{r}
+
+ggplot(data = hares_juveniles, aes(x = sex, y = weight)) +
+  geom_beeswarm(width = 0.8,
+                aes(color = sex)) +
+  facet_wrap(~ grid) +
+  scale_color_manual(values = c("goldenrod2","cyan4"),
+                     na.value = "coral") +
+  geom_boxplot(fill = NA, width = 0.5, outlier.color = NA) +
+  theme_minimal() +
+  labs(x = "Sex",
+       y = "Hare Weight (g)")
+
+
+```
+
+
+
+##### Juvenile weight comparison (male & female snowshoe hares). 
+
+Further compare mean weights for **juvenile male and female snowshoe hares** included in this study. In this section, you should include:
+
+A finalized table containing the mean, standard deviation, and sample size for male and female juvenile snowshoe hares, with a table caption (remember, this is placed *above* the table in your report)
+A 2 - 3 sentence comprehensive statement of the means comparison, including at least:
+The actual difference in means
+Effect size (Cohen's *d*)
+Outcome of a two-sample t-test
+ 
+Note: Exploratory graphs (e.g. histograms, QQ-plots) to explore assumptions of your t-test should not show up in your final knitted document, but you DO still need to create and think about them. If you want keep the code chunk containing those exploratory visualizations in your .Rmd but not appear in the knitted doc, you can add `include = FALSE` in the code chunk header.
+
+```{r}
+m_hares <- hares_juveniles %>% 
+  filter(sex == "m") %>% 
+  pull(weight)
+
+f_hares <- hares_juveniles %>% 
+  filter(sex == "f") %>% 
+  pull(weight)
+
+# Exploratory histograms & qq-plots to check assumptions
+hist(m_hares) # Kind of normal, possibly bimodal though
+qqnorm(m_hares) # Not fully linear...not fully normal
+hist(f_hares) # Possibly a bit positively skewed
+qqnorm(f_hares) # Looks very linear
+# Overall: There is general normality and due to sample size the  Central Limit Theorem will hold despite some slight deviations from normality. Two-sample t-test OK for means comparison! 
+
+# t-test:
+hares_ttest <- t.test(m_hares, f_hares)
+
+# Tidy model results to call outputs in-line: 
+hares_ttest_tidy <- tidy(hares_ttest)
+
+# Effect size: 
+hares_sex_effsize <- cohen.d(m_hares, f_hares, na.rm = TRUE)
+
+```
+
+
+##### Relationship between juvenile weight & hind foot length. 
+
+Explore the relationship between juvenile snowshoe hare hind foot length (variable `hindft`, recorded in millimeters), and weight. Include all juvenile hares in the study. Create a final visualization of juvenile hare hind foot length versus weight. Include a figure caption.
+
+Upon seeing your graph, your “boss” tells you to try out linear regression to describe how juvenile snowshoe hare weight changes with respect to hind foot length. Try it out (the only variables you are expected to include here are hind foot length and weight, using data for all juvenile hares in the data, e.g. you are not expected to explore impacts of sex, site, etc.), and check the model diagnostics.
+
+In 2 - 3 sentences below your figure, describe the outcome of your linear regression exploration (e.g. slope interpretation, R2 value, and Pearson's r correlation) and touch briefly on which assumption(s) of linear regression may be a concern, and additional thoughts you have about how well (or not well…) the linear model describes the relationship. What worries you? 
+
+### Summary
+
+Include a very short summary describing your main findings from your juvenile hares exploration (bulletpoints are fine)
+
+
+### Citations
+
+Kielland, K., F.S. Chapin, R.W. Ruess, and Bonanza Creek LTER. 2017. Snowshoe hare physical data in Bonanza Creek Experimental Forest: 1999-Present ver 22. Environmental Data Initiative. https://doi.org/10.6073/pasta/03dce4856d79b91557d8e6ce2cbcdc14 (Accessed 2020-11-18). 
+
+
