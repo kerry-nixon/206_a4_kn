@@ -168,6 +168,16 @@ hares_ttest_tidy <- tidy(hares_ttest)
 # Effect size: 
 hares_sex_effsize <- cohen.d(m_hares, f_hares, na.rm = TRUE)
 
+# Summary Table with means, SDs & sample sizes for each: 
+hares_summary <- hares_juveniles %>% 
+  group_by(sex) %>% 
+  summarize(mean_weight = round(mean(weight, na.rm = TRUE),2),
+            sd_weight = round(sd(weight, na.rm = TRUE),2),
+            sample_size = n())
+
+kable(hares_summary, col.names = c("Sex", "Mean weight (g)", "Standard deviation (g)", "Sample size")) %>% 
+  kable_styling(full_width = FALSE, "striped")
+
 ```
 
 
@@ -178,6 +188,36 @@ Explore the relationship between juvenile snowshoe hare hind foot length (variab
 Upon seeing your graph, your “boss” tells you to try out linear regression to describe how juvenile snowshoe hare weight changes with respect to hind foot length. Try it out (the only variables you are expected to include here are hind foot length and weight, using data for all juvenile hares in the data, e.g. you are not expected to explore impacts of sex, site, etc.), and check the model diagnostics.
 
 In 2 - 3 sentences below your figure, describe the outcome of your linear regression exploration (e.g. slope interpretation, R2 value, and Pearson's r correlation) and touch briefly on which assumption(s) of linear regression may be a concern, and additional thoughts you have about how well (or not well…) the linear model describes the relationship. What worries you? 
+
+```{r}
+ggplot(data = hares_juveniles, aes(x = hindft, y = weight)) +
+  geom_point( size = 2) +
+  theme_minimal() +
+  labs(x = "\nFlipper length (mm)",
+       y = "Body mass (g)\n")
+
+```
+
+
+```{r}
+# Do linear regression
+hares_lm <- lm(weight ~ hindft, data = hares_juveniles)
+
+# Get tidy versions of the model output to call later on in text
+hares_lm_tidy <- tidy(hares_lm)
+hares_lm_glance <- glance(hares_lm)
+
+# See model diagnostics:
+plot(hares_lm)
+
+# Get Pearson's r correlation
+hare_cor <- cor.test(hares_juveniles$weight, hares_juveniles$hindft)
+
+# Tidy version of correlation output:
+hare_cor_tidy <- tidy(hare_cor)
+
+```
+
 
 ### Summary
 
